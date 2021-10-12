@@ -4,27 +4,34 @@ import binascii
 import urllib.request
 import json
 
-target = '00000000000000000001d1ac73631145c9f46a199fed8d4ae4f5e849d3581d09'
+target = '0000000000000000000022d8f11190d40de785dbf24bdfaa7d4040c804c5e507'
 
 """
 验证区块哈希的正确性
 """
 # 获取16进制区块信息
 def get_hex_record(target):
+    print('reading hex ...')
     url = 'https://blockchain.info/rawblock/' + target + '?format=hex'
     r = requests.get(url)
+    print('reading hex complete ...')
     return r.text
+
+hex_record = get_hex_record(target)
 
 # 获取json格式的区块信息
 def get_json_record(target):
+    print('reading json ...')
     url = 'https://blockchain.info/rawblock/' + target
     resp = urllib.request.urlopen(url)
     js = json.loads(resp.read())
+    print('reading json complete ...')
     return js
 
+json_record = get_json_record(target)
+
 # 展示区块信息
-def show_info(target):
-    json_record = get_json_record(target)
+def show_info():
     print('hash : ' + json_record['hash'])
     print('ver : ' + str(json_record['ver']))
     print('prev_block : ' + json_record['prev_block'])
@@ -34,18 +41,17 @@ def show_info(target):
     print('nonce : ' + str(json_record['nonce']))
 
 # 计算区块哈希
-def cal_hash(target):
-    hex_record = get_hex_record(target)
+def cal_hash():
     block_header = hex_record[:160]
-    print(block_header)
+    # print(block_header)
     hash = hashlib.sha256(hashlib.sha256(binascii.unhexlify(block_header)).digest()).digest()
     result = binascii.hexlify(hash[::-1]).decode('utf8')
     return result
 
 # 验证区块哈希
-def validate_hash(target):
-    show_info(target)
-    calculated_hash = cal_hash(target)
+def validate_hash():
+    show_info()
+    calculated_hash = cal_hash()
     print('calculated_hash = ' + calculated_hash)
 
     if calculated_hash == target:
@@ -60,14 +66,8 @@ def validate_hash(target):
 def big_small_end_trans(str):
     return binascii.hexlify(binascii.unhexlify(str)[::-1]).decode('utf8')
 
-# 返回大端merkle_root
-def get_merkle_root(target):
-    json_record = get_json_record(target)
-    return json_record['mrkl_root']
-
 # 计算区块的merkle_root值
-def cal_merkle_root(target):
-    json_record = get_json_record(target)
+def cal_merkle_root():
     json_tx_record = json_record['tx']
     tx_nums = len(json_record['tx'])
     tx_hash = []
@@ -99,13 +99,13 @@ def cal_merkle_root(target):
     return tx_hash[0]
 
 # 验证merkle_root
-def validate_merkle_root(target):
-    calculated_merkle_root = big_small_end_trans(cal_merkle_root(target))
+def validate_merkle_root():
+    calculated_merkle_root = big_small_end_trans(cal_merkle_root())
     print('calculated_merkle_root = ' + calculated_merkle_root)
-    if calculated_merkle_root == get_merkle_root(target):
+    if calculated_merkle_root == json_record['mrkl_root']:
         print('merkle root is right')
     else:
         print('merkle root is wrong')
 
-validate_hash(target)
-validate_merkle_root(target)
+validate_hash()
+validate_merkle_root()
